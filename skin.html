@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Skincare Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f0f5;
+      transition: background 0.3s, color 0.3s;
+    }
+    .dark-mode {
+      background: #2c2c2c;
+      color: #f7f0f5;
+    }
+    .container {
+      max-width: 500px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: background 0.3s, color 0.3s;
+    }
+    .dark-mode .container {
+      background: #444;
+    }
+    h2 {
+      text-align: center;
+      color: #d63384;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #d63384;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: #f9f9f9;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .delete { color: red; cursor: pointer; font-weight: bold; }
+    .tip { font-size: 0.9em; color: #555; margin-top: 5px; }
+    .dark-mode .tip { color: #ccc; }
+    .toggle { margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌸 Smart Skincare Tracker</h2>
+
+    <input type="text" id="productName" placeholder="Enter Product (e.g., Cleanser, Serum)">
+    <select id="routineType">
+      <option value="">Select Routine</option>
+      <option value="Morning">Morning</option>
+      <option value="Night">Night</option>
+    </select>
+    <button onclick="addProduct()">Add Product</button>
+
+    <div class="toggle">
+      <label><input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()"> Dark Mode</label>
+    </div>
+
+    <h3>☀️ Morning Routine</h3>
+    <ul id="morningList"></ul>
+
+    <h3>🌙 Night Routine</h3>
+    <ul id="nightList"></ul>
+
+    <h3>📆 Routine Days: <span id="dayCounter">0</span></h3>
+  </div>
+
+  <script>
+    const morningList = document.getElementById("morningList");
+    const nightList = document.getElementById("nightList");
+    const dayCounter = document.getElementById("dayCounter");
+    const darkModeToggle = document.getElementById("darkModeToggle");
+
+    // Load data
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProducts();
+      loadDayCounter();
+      loadDarkMode();
+      setRoutineReminder();
+    });
+
+    function addProduct() {
+      const name = document.getElementById("productName").value.trim();
+      const routine = document.getElementById("routineType").value;
+
+      if (!name || !routine) { alert("Enter product and routine type!"); return; }
+
+      const product = { name, routine, tip: getTip(name) };
+      createProductElement(product);
+      saveProduct(product);
+      incrementDayCo
