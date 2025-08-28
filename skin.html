@@ -3,65 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Skincare Tracker</title>
+  <title>Smart Skincare Tracker++</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: #f7f0f5;
       transition: background 0.3s, color 0.3s;
     }
-    .dark-mode {
-      background: #2c2c2c;
-      color: #f7f0f5;
-    }
+    .dark-mode { background: #1e1e1e; color: #f7f0f5; }
+
     .container {
-      max-width: 500px;
+      max-width: 550px;
       margin: 30px auto;
       padding: 20px;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       transition: background 0.3s, color 0.3s;
     }
-    .dark-mode .container {
-      background: #444;
-    }
-    h2 {
-      text-align: center;
-      color: #d63384;
-    }
+    .dark-mode .container { background: #2e2e2e; }
+
+    h2 { text-align: center; color: #d63384; margin-bottom: 15px; }
+
     input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 8px; border: 1px solid #ccc;
+      font-size: 14px;
     }
     button {
-      background: #d63384;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
+      background: #d63384; color: white; font-weight: bold; cursor: pointer;
+      border: none; transition: transform 0.2s;
     }
+    button:hover { transform: scale(1.03); }
+
     ul { list-style: none; padding: 0; }
     li {
-      background: #f9f9f9;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background: #fafafa; padding: 12px; margin-bottom: 10px;
+      border-radius: 10px; display: flex; flex-direction: column;
+      transition: transform 0.3s ease;
     }
+    li.done { opacity: 0.6; text-decoration: line-through; }
+    li:hover { transform: translateX(5px); }
+
+    .actions { display: flex; justify-content: space-between; margin-top: 8px; }
     .delete { color: red; cursor: pointer; font-weight: bold; }
-    .tip { font-size: 0.9em; color: #555; margin-top: 5px; }
-    .dark-mode .tip { color: #ccc; }
-    .toggle { margin: 10px 0; }
+    .doneBtn { color: green; cursor: pointer; font-weight: bold; }
+
+    .tip { font-size: 0.85em; color: #555; margin-top: 4px; }
+    .dark-mode .tip { color: #bbb; }
+
+    .toggle { margin: 12px 0; text-align: center; }
+
+    .progress-bar {
+      background: #eee; border-radius: 8px; overflow: hidden; height: 12px;
+      margin: 10px 0;
+    }
+    .progress { background: #d63384; height: 100%; width: 0%; transition: width 0.3s; }
+    .streak { font-size: 0.95em; color: #444; margin: 5px 0; }
+    .dark-mode .streak { color: #ddd; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>🌸 Smart Skincare Tracker</h2>
+    <h2>🌸 Smart Skincare Tracker ++</h2>
 
     <input type="text" id="productName" placeholder="Enter Product (e.g., Cleanser, Serum)">
     <select id="routineType">
@@ -69,45 +73,51 @@
       <option value="Morning">Morning</option>
       <option value="Night">Night</option>
     </select>
-    <button onclick="addProduct()">Add Product</button>
+    <button onclick="addProduct()">➕ Add Product</button>
 
     <div class="toggle">
-      <label><input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()"> Dark Mode</label>
+      <label><input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()"> 🌙 Dark Mode</label>
     </div>
 
     <h3>☀️ Morning Routine</h3>
+    <div class="progress-bar"><div id="morningProgress" class="progress"></div></div>
     <ul id="morningList"></ul>
 
     <h3>🌙 Night Routine</h3>
+    <div class="progress-bar"><div id="nightProgress" class="progress"></div></div>
     <ul id="nightList"></ul>
 
     <h3>📆 Routine Days: <span id="dayCounter">0</span></h3>
+    <div class="streak">🔥 Streak: <span id="streakCounter">0</span> days</div>
   </div>
 
   <script>
     const morningList = document.getElementById("morningList");
     const nightList = document.getElementById("nightList");
     const dayCounter = document.getElementById("dayCounter");
+    const streakCounter = document.getElementById("streakCounter");
     const darkModeToggle = document.getElementById("darkModeToggle");
+    const morningProgress = document.getElementById("morningProgress");
+    const nightProgress = document.getElementById("nightProgress");
 
-    // Load data
     document.addEventListener("DOMContentLoaded", () => {
       loadProducts();
       loadDayCounter();
+      loadStreak();
       loadDarkMode();
+      requestNotificationPermission();
       setRoutineReminder();
+      updateProgress();
     });
 
     function addProduct() {
       const name = document.getElementById("productName").value.trim();
       const routine = document.getElementById("routineType").value;
-
       if (!name || !routine) { alert("Enter product and routine type!"); return; }
 
-      const product = { name, routine, tip: getTip(name) };
+      const product = { name, routine, tip: getTip(name), done: false };
       createProductElement(product);
       saveProduct(product);
-      incrementDayCounter();
 
       document.getElementById("productName").value = "";
       document.getElementById("routineType").value = "";
@@ -115,14 +125,35 @@
 
     function createProductElement(product) {
       const li = document.createElement("li");
-      li.innerHTML = `${product.name} <span class='delete' onclick='deleteProduct(this, "${product.routine}")'>❌</span>`;
+      if(product.done) li.classList.add("done");
+      li.innerHTML = `<strong>${product.name}</strong>`;
       const tip = document.createElement("div");
       tip.className = "tip";
       tip.textContent = product.tip;
       li.appendChild(tip);
 
-      if (product.routine === "Morning") morningList.appendChild(li);
-      else nightList.appendChild(li);
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      actions.innerHTML = `<span class='doneBtn' onclick='toggleDone(this, "${product.name}", "${product.routine}")'>✅</span>
+                           <span class='delete' onclick='deleteProduct(this, "${product.name}", "${product.routine}")'>❌</span>`;
+      li.appendChild(actions);
+
+      (product.routine === "Morning" ? morningList : nightList).appendChild(li);
+    }
+
+    function toggleDone(el, name, routine) {
+      const li = el.closest("li");
+      li.classList.toggle("done");
+
+      let products = JSON.parse(localStorage.getItem("skincare")) || [];
+      products = products.map(p => {
+        if(p.name === name && p.routine === routine) p.done = !p.done;
+        return p;
+      });
+      localStorage.setItem("skincare", JSON.stringify(products));
+      updateProgress();
+      incrementDayCounter(); 
+      updateStreak();
     }
 
     function saveProduct(product) {
@@ -136,13 +167,12 @@
       products.forEach(p => createProductElement(p));
     }
 
-    function deleteProduct(element, routine) {
-      const li = element.parentElement;
-      const productName = li.firstChild.textContent.trim();
-      li.remove();
+    function deleteProduct(el, name, routine) {
+      el.closest("li").remove();
       let products = JSON.parse(localStorage.getItem("skincare")) || [];
-      products = products.filter(p => !(p.name === productName && p.routine === routine));
+      products = products.filter(p => !(p.name === name && p.routine === routine));
       localStorage.setItem("skincare", JSON.stringify(products));
+      updateProgress();
     }
 
     function getTip(name) {
@@ -154,13 +184,12 @@
         'Sunscreen': 'Reapply every 2-3 hours.',
         'Mask': 'Use 1-2 times per week.'
       };
-      return tips[name] || 'Apply as needed';
+      return tips[name] || `Tip: Stay consistent with your ${name}.`;
     }
 
-    // Day Counter
     function incrementDayCounter() {
       let days = parseInt(localStorage.getItem("dayCounter")) || 0;
-      days += 1;
+      days++;
       localStorage.setItem("dayCounter", days);
       dayCounter.textContent = days;
     }
@@ -170,25 +199,56 @@
       dayCounter.textContent = days;
     }
 
-    // Dark Mode
+    function updateStreak() {
+      let streak = parseInt(localStorage.getItem("streak")) || 0;
+      streak++;
+      localStorage.setItem("streak", streak);
+      streakCounter.textContent = streak;
+    }
+
+    function loadStreak() {
+      const streak = parseInt(localStorage.getItem("streak")) || 0;
+      streakCounter.textContent = streak;
+    }
+
+    function updateProgress() {
+      const products = JSON.parse(localStorage.getItem("skincare")) || [];
+      const morning = products.filter(p => p.routine === "Morning");
+      const night = products.filter(p => p.routine === "Night");
+      const morningDone = morning.filter(p => p.done).length;
+      const nightDone = night.filter(p => p.done).length;
+      morningProgress.style.width = morning.length ? (morningDone/morning.length*100)+"%" : "0%";
+      nightProgress.style.width = night.length ? (nightDone/night.length*100)+"%" : "0%";
+    }
+
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
       localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
     }
-
     function loadDarkMode() {
       const darkMode = localStorage.getItem("darkMode") === 'true';
       if (darkMode) document.body.classList.add("dark-mode");
       darkModeToggle.checked = darkMode;
     }
 
-    // Routine Reminder (browser alert)
+    // Notifications
+    function requestNotificationPermission() {
+      if("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    }
+    function notify(msg) {
+      if(Notification.permission === "granted") {
+        new Notification(msg);
+      }
+    }
+
     function setRoutineReminder() {
       setInterval(() => {
         const hour = new Date().getHours();
-        if(hour === 8) alert("☀️ Morning Skincare Time!");
-        if(hour === 21) alert("🌙 Night Skincare Time!");
-      }, 3600000); // checks every hour
+        if(hour === 8) notify("☀️ Morning Skincare Time!");
+        if(hour === 21) notify("🌙 Night Skincare Time!");
+      }, 3600000);
     }
   </script>
 </body>
